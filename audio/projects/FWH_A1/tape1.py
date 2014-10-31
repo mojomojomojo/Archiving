@@ -85,27 +85,41 @@ def noise_reduce( infile, segs, outfile, profile, amount ):
 def np_A_composite( infile ):
     infile_base = os.path.splitext(os.path.basename(infile))[0]
 
-    profile = '{0}.A.composite.profile'.format(infile_base)
-    print('Creating noise profile (A,composite): ',end='')
+    profiles = [ '{0}.A{1}.composite.profile'.format(infile_base,i)
+                 for i in range(3) ]
+    print('Creating noise profiles (A,composite): ',end='')
     sys.stdout.flush()
     timer = Timer()
-    noise_profile(infile,profile,Tape001A.NOISE_SAMPLES)
+    noise_profile(infile,profiles[0],
+                  segments(Tape001A.NOISE_SAMPLES[0],
+                           Tape001A.NOISE_SAMPLES[1]))
+    noise_profile(infile,profiles[1],
+                  segments(Tape001A.NOISE_SAMPLES[2],
+                           Tape001A.NOISE_SAMPLES[3]))
+    noise_profile(infile,profiles[2],
+                  segments(Tape001A.NOISE_SAMPLES[4],
+                           Tape001A.NOISE_SAMPLES[5]))
     print(str(timer))
 
     # bracked the amounts (for comparison)
-    for _amount in range(10,50,5):
-        amount = _amount/100
-        outfile = '{0}.A.composite-{1:03d}.wav'.format(infile_base,int(amount*100))
-        print('Noise reduction: {0} ({1}): '.format(amount,outfile),end='')
-        sys.stdout.flush()
-        timer = Timer()
-        noise_reduce(infile,Tape001A.AUDIO,outfile,profile,amount)
-        print(str(timer))
+    # 30/0: pretty clean
+    # 50/0: noticeably muted
+    for prof_idx in range(len(profiles)):
+        for _amount in range(5,50,5):
+            amount = _amount/100
+            outfile = '{0}.A{2}.composite-{1:03d}.wav'.format(infile_base,int(amount*100),prof_idx)
+            print('Noise reduction: {0} ({1}): '.format(amount,outfile),end='')
+            sys.stdout.flush()
+            timer = Timer()
+            noise_reduce(infile,Tape001A.AUDIO,outfile,profiles[prof_idx],amount)
+            print(str(timer))
 
 
 if __name__ == '__main__':
     cmdline = build_cmdline().parse_args()
 
+    if not os.path.isfile(cmdline.file):
+        print("Specified file does not exist: '{0}'".format(cmdline.file))
     timer = Timer()
     np_A_composite(cmdline.file)
     print('\n\nTotal Elapsed: {0}\n'.format(timer))
