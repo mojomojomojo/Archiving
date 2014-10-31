@@ -12,20 +12,25 @@ def build_cmdline():
     parser = argparse.ArgumentParser('audio fix for FWH_A1 Tape 1')
     parser.add_argument('--match',type=str,default=['Tape001.raw.A.composite'],nargs='*')
     parser.add_argument('--noisy',type=int,nargs='+',default=[0])
+    parser.add_argument('--gain',type=float,help='amplify the audio by <n> dB')
+    parser.add_argument('--normalize',type=float,help='normalize the audio to <n> dB below 0 dB (almost certainly negative)')
     return parser
 
 
-def play( infile, segs ):
+def play( infile, segs, gain=None, normalize=None ):
     try:
-        subprocess.call(
-            [
-                'sox',
-                '-q', # quiet
-                infile,
-                '-d',
-                'trim' ] + segs.samples() + [
-            ],
-            )
+        command = [
+            'sox',
+            '-q', # quiet
+            infile,
+            '-d',
+            'trim' ] + segs.samples() + [
+        ]
+        if gain:
+            command.extend(['gain',str(gain)])
+        if normalize:
+            command.extend(['gain','-n',str(normalize)])
+        subprocess.call(command)
     except subprocess.CalledProcessError as e:
         print('Exception creating noise profile.\n{0}'.format(cpe_str(e)))
         raise e
@@ -61,4 +66,6 @@ if __name__ == '__main__':
 
     for afile in playFiles:
         print(afile)
-        play(afile,playSegments)
+        play(afile,playSegments,
+             gain=cmdline.gain,
+             normalize=cmdline.normalize)
