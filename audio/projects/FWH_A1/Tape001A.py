@@ -8,7 +8,7 @@ from soxutil import *
 #   has side B first, then side A.
 
 
-AUDIO            = segment(  211696,28601117)
+AUDIO        = segment(  211696,28601117)
 AUDIO_PIECES = segments(
     segment(  211696,17927836), # one volume level
 

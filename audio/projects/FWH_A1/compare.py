@@ -10,6 +10,7 @@ import Tape001A
 
 def build_cmdline():
     parser = argparse.ArgumentParser('audio fix for FWH_A1 Tape 1')
+    parser.add_argument('files',type=str,nargs='*',default=[])
     parser.add_argument('--match',type=str,default=['Tape001.raw.A.composite'],nargs='*')
     parser.add_argument('--noisy',type=int,nargs='+',default=[0])
     parser.add_argument('--gain',type=float,help='amplify the audio by <n> dB')
@@ -57,8 +58,9 @@ if __name__ == '__main__':
 
     wav = re.compile(r'\.wav$',re.I)
     targetFiles = PrefixMatch(*cmdline.match)
-    playFiles = tuple(sorted(filter(targetFiles.match,
-                                    filter(wav.search,os.listdir('.')))))
+    playFiles = tuple(sorted(list(filter(targetFiles.match,
+                                         filter(wav.search,os.listdir('.'))))+
+                             cmdline.files))
     print('Comparing Files:\n  {0}\n'.format('\n  '.join(playFiles)))
 
     playSegments = segments(*[ Tape001A.NOISY_SEGMENTS[segIdx]
