@@ -8,7 +8,7 @@ from soxutil import *
 #   has side B first, then side A.
 
 
-AUDIO        = segment(  211696,28601117)
+AUDIO        = segment(  211696,28606542)
 AUDIO_PIECES = segments(
     segment(  211696,17927836), # one volume level
 
@@ -16,11 +16,11 @@ AUDIO_PIECES = segments(
     #   evidence of a stop-tape, movement, or other environmental
     #   adjustment that would cause it. The most obvious evidence is
     #   the quieting of the background hiss.
-    segment(17927836,20490723), # 6:46 - 7:45
+    segment(17927836,20523688), # 6:46 - 7:45
 
     # There's a stop-start artifact here.
 
-    segment(20549329,28569837),
+    segment(20523688,28606542),
 
 )
 TRAILING_SILENCE = segment(28611283,84860285)

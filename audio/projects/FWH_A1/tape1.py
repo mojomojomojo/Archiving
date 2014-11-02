@@ -11,6 +11,8 @@ import subprocess
 import argparse
 import sys,os,os.path
 from datetime import datetime,time
+import shlex, socket, getpass
+
 
 from soxutil import *
 import Tape001A
@@ -41,45 +43,80 @@ def remove_output( outfile ):
     if os.path.isfile(outfile):
         os.remove(outfile)
 
-def noise_profile( infile, outfile, segs ):
+def q( cmdstr ):
+    return shlex.quote(cmdstr)
+
+def sox( outfile, sox_cmd, descr=None ):
     remove_output(outfile)
+
+    outinfo = '{0}.info'.format(outfile)
+    remove_output(outinfo)
+    with open(outinfo,'wt',encoding='utf-8') as info:
+        print('# {0}'.format(' '.join(tuple(map(shlex.quote,sox_cmd)))),
+              file=info)
+        print('# invoked on {stamp} by {user} on {machine}'.format(
+            stamp = datetime.now().strftime('%Y-%m-%dT%H:%M:%S'),
+            user  = getpass.getuser(),
+            machine = socket.gethostname(),
+            ), file=info)
+
+    startTime = datetime.now()
+    exc = None # an exception to reraise
     try:
-        output = subprocess.check_output(
-            [
-                'sox',
-                infile,
-                '-n', # to audio out
-                'trim' ] + segs.samples() + [
-                'noiseprof', outfile
-            ],
-            stderr = subprocess.STDOUT)
+        subprocess.check_output( sox_cmd,
+                                 stderr = subprocess.STDOUT )
     except subprocess.CalledProcessError as e:
-        print('Exception creating noise profile.\n{0}'.format(cpe_str(e)))
-        raise e
+        print('Exception {0}.\n{1}'.format(descr if descr else '',cpe_str(e)))
+        exc = e
     except Exception as e:
-        print('Exception creating noise profile.')
-        raise e
+        print('Exception {}'.format(descr if descr else ''))
+        exc = e
+    elapsed = datetime.now()-startTime
+
+    with open(outinfo,'at',encoding='utf-8') as info:
+        print('# Elapsed Time: {0}'.format(elapsed), file=info)
+
+    if exc:
+        raise exc
+    
+
+def noise_profile( infile, outfile, segs ):
+    sox(outfile,
+        [
+            'sox',
+            infile,
+            '-n', # to audio out
+            'trim' ] + segs.samples() + [
+                'noiseprof', outfile
+        ],
+        'creating noise profile')
+
 
 def noise_reduce( infile, segs, outfile, profile, amount ):
-    remove_output(outfile)
-    try:
-        output = subprocess.check_output(
-            [
-                'sox',
-                infile,
-                outfile,
-                'trim' ] + segs.samples() + [
+    sox(outfile,
+        [
+            'sox',
+            infile,
+            outfile,
+            'trim' ] + segs.samples() + [
                 'noisered', profile, str(amount),
-            ],
-            stderr = subprocess.STDOUT)
-    except subprocess.CalledProcessError as e:
-        print('Exception with noise reduction.\n{0}'.format(cpe_str(e)))
-        raise e
-    except Exception as e:
-        print('Exception with noise reduction.')
-        raise e
+        ],
+        'using noise reduction filter')
 
-    
+
+def sox_xform( infile, outfile, xforms ):
+    command = [
+        'sox',
+        infile,
+        outfile,
+    ]
+    for i in range(len(xforms)):
+        if i > 0:
+            command.append(':')
+        command.extend(xforms[i])
+
+    sox(outfile,command,'applying transforms')
+
 
 
 def np_A_composite( infile ):
@@ -115,6 +152,42 @@ def np_A_composite( infile ):
             print(str(timer))
 
 
+def np_A_composite_finish( infile, outfile ):
+    infile_base = os.path.splitext(os.path.basename(infile))[0]
+
+    profiles = [ '{0}.A{1}.composite.profile'.format(infile_base,i)
+                 for i in range(3) ]
+    print('Creating noise profiles (A,composite): ',end='')
+    sys.stdout.flush()
+    timer = Timer()
+    noise_profile(infile,profiles[0],
+                  segments(Tape001A.NOISE_SAMPLES[0],
+                           Tape001A.NOISE_SAMPLES[1]))
+    noise_profile(infile,profiles[1],
+                  segments(Tape001A.NOISE_SAMPLES[2],
+                           Tape001A.NOISE_SAMPLES[3]))
+    noise_profile(infile,profiles[2],
+                  segments(Tape001A.NOISE_SAMPLES[4],
+                           Tape001A.NOISE_SAMPLES[5]))
+    print(str(timer))
+
+    amounts = [ .3, .3, .3 ]
+
+    xforms = []
+    for i in range(len(profiles)):
+        relseg = Tape001A.AUDIO_PIECES[i]
+        if i > 0:
+            relseg -= Tape001A.AUDIO_PIECES[i-1]
+        xforms.append(['trim']+relseg.samples()+['noisered',profiles[i],str(amounts[i])])
+
+
+    print('Applying finished noise reductions: ',end='')
+    sys.stdout.flush()
+    timer = Timer()
+    sox_xform(infile,outfile,xforms)
+    print(str(timer))
+
+
 if __name__ == '__main__':
     cmdline = build_cmdline().parse_args()
 
@@ -122,4 +195,5 @@ if __name__ == '__main__':
         print("Specified file does not exist: '{0}'".format(cmdline.file))
     timer = Timer()
     np_A_composite(cmdline.file)
+#    np_A_composite_finish(cmdline.file,'test-finished.wav')
     print('\n\nTotal Elapsed: {0}\n'.format(timer))

@@ -8,9 +8,9 @@ from soxutil import *
 #   has side B first, then side A.
 
 
-AUDIO            = segment( 93765221,113759787)
+AUDIO            = segment( 93765221,113805588)
 AUDIO_PIECES = segments(
-    segment( 93765221,113759787),
+    segment( 93765221,113805588),
 )
 
 TRAILING_SILENCE = segment(113799270,178413918)

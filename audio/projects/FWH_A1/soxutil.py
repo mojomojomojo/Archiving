@@ -6,8 +6,8 @@ import itertools
 #   resolution/precision.
 
 class segment:
-    def __init__(self,_in,_out):
-        self.i,self.o = _in,_out
+    def __init__(self,_in,_out,relative=False):
+        self.i,self.o,self.rel = _in,_out,relative
 
     def seconds(self):
         return '{0} ={1}'.format(seconds(samples=self.i),
@@ -18,6 +18,9 @@ class segment:
     def __str__(self):
         return 'Segment({0},{1})'.format(self.i,self.o)
 
+    def __sub__(self, seg):
+        return segment(self.i-seg.o, self.o-seg.o,relative=True)
+
 class segments:
     def __init__(self,*segs):
         self.segments = tuple(segs)
@@ -27,6 +30,8 @@ class segments:
         return self.segments[idx]
     def __str__(self):
         return 'Segments[{0}]'.format(' '.join(list(map(str,self.segments))))
+    def __len__(self):
+        return  len(self.segments)
 
 def seconds(sampRate=44100, samples=None, hms=None):
     '''
