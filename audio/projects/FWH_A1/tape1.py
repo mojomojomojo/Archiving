@@ -152,6 +152,35 @@ def np_A_composite( infile ):
             print(str(timer))
 
 
+def np_A_singular( infile ):
+    infile_base = os.path.splitext(os.path.basename(infile))[0]
+
+    profiles = [ '{0}.A{1}.singular{2}.profile'.format(infile_base,i,j)
+                 for i in range(3) for j in range(2) ]
+    profiles.append('{0}.A{1}.singular{2}.profile'.format(infile_base,2,2))
+
+    print('Creating noise profiles (A,composite): ',end='')
+    sys.stdout.flush()
+    timer = Timer()
+    for i in range(len(Tape001A.NOISE_SAMPLES)):
+        noise_profile(infile,profiles[i],
+                      segments(Tape001A.NOISE_SAMPLES[i]))
+    print(str(timer))
+
+    # bracked the amounts (for comparison)
+    # 30/0: pretty clean
+    # 50/0: noticeably muted
+    for prof_idx in range(len(profiles)):
+        for _amount in range(5,50,5):
+            amount = _amount/100
+            outfile = '{0}.A{2}.singular-{1:03d}.wav'.format(infile_base,int(amount*100),prof_idx)
+            print('Noise reduction: {0} ({1}): '.format(amount,outfile),end='')
+            sys.stdout.flush()
+            timer = Timer()
+            noise_reduce(infile,Tape001A.AUDIO,outfile,profiles[prof_idx],amount)
+            print(str(timer))
+
+
 def np_A_composite_finish( infile, outfile ):
     infile_base = os.path.splitext(os.path.basename(infile))[0]
 
@@ -194,6 +223,7 @@ if __name__ == '__main__':
     if not os.path.isfile(cmdline.file):
         print("Specified file does not exist: '{0}'".format(cmdline.file))
     timer = Timer()
-    np_A_composite(cmdline.file)
+    np_A_singular(cmdline.file)
+#    np_A_composite(cmdline.file)
 #    np_A_composite_finish(cmdline.file,'test-finished.wav')
     print('\n\nTotal Elapsed: {0}\n'.format(timer))

@@ -2,7 +2,7 @@
 
 import argparse
 import subprocess
-import os,re
+import sys,os,re
 
 from soxutil import *
 import Tape001A
@@ -68,6 +68,7 @@ if __name__ == '__main__':
 
     for afile in playFiles:
         print(afile)
+        sys.stdout.flush()
         play(afile,playSegments,
              gain=cmdline.gain,
              normalize=cmdline.normalize)

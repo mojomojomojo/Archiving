@@ -51,7 +51,7 @@ NOISY_SEGMENTS = segments(
     # AUDIO_PIECES[1]
     segment(18300177,18969696), # Did mama and daddy teach her at home?
     # AUDIO_PIECES[2]
-    segment(26990890,27561732),
-    segment(27646977,28099083),
+    segment(26990890,27561732), # A2-comp, 25-30
+    segment(27646977,28099083), # A2-comp, 25-30; 35 begins to muddle Beulah's voice
 )
 

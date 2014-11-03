@@ -1,4 +1,5 @@
 *.wav
 *.profile
+*.info
 __pycache__
 env_r16.cmd
